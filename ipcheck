@@ -1,0 +1,82 @@
+#!/bin/bash
+############################################################################
+# Checks the Internet-facing IP address of the system, compares it to the  #
+# IP address read on the previous execution of the script, and sends an    #
+# email with the new IP if they are different.                             #
+#                                                                          #
+# Wedge Jarrad 2013-12-26                                                  #
+############################################################################
+
+# Absolute path to the file which should hold the IP address. Used to read the
+# IP discovered on the previous run of the script and to store the value found
+# on this run of the script.
+oldipfile="$HOME/.ipcheck.txt"
+
+# The email address that will serve as both the source and destination for
+# emails sent by this script. It is also used as the username when
+# authenticating with the smtp server.
+email_address=
+
+# Password used to authenticate with the sntp server.
+email_password=
+
+# SMTP server to use.
+smtp_server=
+
+# SMTP server port. We will be connecting via TLS.
+smtp_port=587
+
+# IP address site such as whatsmyip.com. Page should consist of only an IP address.
+ip_site=
+
+# Will appear in the email message. Useful if you have this script running from more than one box.
+computer_name=
+
+# Get the old IP address, if any
+touch "$oldipfile"
+read -r oldip < "$oldipfile"
+
+# Get the current IP address
+if command -v curl > /dev/null; then
+    newip="$(curl --silent "$ip_site")"
+elif command -v wget > /dev/null; then
+    newip="$(wget -O - --quiet "$ip_site")"
+else
+    # don't have curl or wget. Bail out.
+    printf '%s' "This script requires either curl or wget to be installed."
+    exit 1
+fi
+
+# Stop now if we weren't able to retrieve an IP address.
+[[ -z "$newip" ]] && exit 1
+
+# RFC 2822 compliant SMTP email
+email="ehlo
+auth plain $(printf '\x00%s\x00%s' "$email_address" "$email_password" | base64)
+mail from: <$email_address>
+rcpt to: <$email_address>
+data
+from: $email_address
+subject: ipchecker: $computer_name - $newip
+
+IP address for $computer_name is now $newip.
+
+Previous IP was $oldip.
+.
+QUIT"
+
+slowly() {
+    while read -r line; do
+        sleep 1
+        printf '%s\n' "$line"
+    done <<<"$email"
+}
+
+if [[ "$oldip" != "$newip" ]]; then
+    # Send an email
+     slowly | openssl s_client -crlf -starttls smtp -connect "$smtp_server":"$smtp_port" > /dev/null 2>&1
+
+    # Update the record in oldipfile
+    printf "$newip" > "$oldipfile"
+fi
+
