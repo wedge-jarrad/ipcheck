@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 ############################################################################
 # Checks the Internet-facing IP address of the system, compares it to the  #
 # IP address read on the previous execution of the script, and sends an    #
@@ -17,7 +17,7 @@ oldipfile="$HOME/.ipcheck.txt"
 # authenticating with the smtp server.
 email_address=
 
-# Password used to authenticate with the sntp server.
+# Password used to authenticate with the smtp server.
 email_password=
 
 # SMTP server to use.
@@ -77,6 +77,6 @@ if [[ "$oldip" != "$newip" ]]; then
      slowly | openssl s_client -crlf -starttls smtp -connect "$smtp_server":"$smtp_port" > /dev/null 2>&1
 
     # Update the record in oldipfile
-    printf "$newip" > "$oldipfile"
+    printf '%s' "$newip" > "$oldipfile"
 fi
 
