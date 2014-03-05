@@ -48,7 +48,8 @@ else
 fi
 
 # Stop now if we weren't able to retrieve an IP address.
-[[ -z "$newip" ]] && exit 1
+# Not a very robust IP regex but should be good enough to filter out error messages and such.
+[[ "$newip" =~ ^[0-9a-fA-F\.:]+$ ]] || exit 1
 
 # RFC 2822 compliant SMTP email
 email="ehlo
