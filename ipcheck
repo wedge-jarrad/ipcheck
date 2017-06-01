@@ -52,7 +52,7 @@ fi
 [[ "$newip" =~ ^[0-9a-fA-F\.:]+$ ]] || exit 1
 
 # RFC 2822 compliant SMTP email
-email="ehlo
+email="ehlo localhost
 auth plain $(printf '\x00%s\x00%s' "$email_address" "$email_password" | base64)
 mail from: <$email_address>
 rcpt to: <$email_address>
